@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 uniform mat4 ModelViewProjectionMatrix;
 uniform mat4 WorldMatrix;
@@ -13,7 +13,7 @@ layout (location = 1) in vec4 v_normal;
 out vec3 position_in_ec;
 out vec3 normal_in_ec;
 
-out vec3 color;
+out vec3 light_position_in_ec;
 
 void main()
 {   
@@ -22,7 +22,7 @@ void main()
    position_in_ec = e_position.xyz;
    normal_in_ec = e_normal.xyz;
 
-   color = PrimitiveColor;
+   light_position_in_ec = vec3(ViewMatrix * vec4(LightPosition, 1.0));
 
    gl_Position = ModelViewProjectionMatrix * v_position;
 }

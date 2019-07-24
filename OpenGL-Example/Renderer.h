@@ -19,6 +19,73 @@ using namespace std;
 using namespace cv;
 using namespace glm;
 
+class ShaderGL
+{
+   void readShaderFile(string& shader_contents, const char* shader_path) const;
+   bool checkCompileErrors(const GLuint& vertex_shader, const GLuint& fragment_shader);
+
+public:
+   GLuint ShaderProgram;
+   GLint MVPLocation, WorldLocation, ViewLocation, ProjectionLocation;
+   GLint ColorLocation, TextureLocation;
+   GLint LightLocation, LightColorLocation, LightSwitchLocation;
+   
+   ShaderGL();
+
+   void setShader(const char* vertex_shader_path, const char* fragment_shader_path);
+};
+
+class LightGL
+{
+   bool TurnLightOn;
+   uint TotalLightNum;
+
+   vec4 GlobalAmbientColor;
+
+   vector<vec4> AmbientColors;
+   vector<vec4> DiffuseColors;
+   vector<vec4> SpecularColors;
+
+   vector<vec3> SpotlightDirections;
+   vector<float> SpotlightExponent;
+   vector<float> SpotlightCutoffAngles;
+
+   vector<vec3> AttenuationFactors;
+   
+   vector<vec4> Positions;
+
+   vector<bool> IsActivated;
+
+public:
+   LightGL();
+
+   bool isLightOn() const;
+   void turnLightOn(const bool& light_on);
+
+   void addLight(
+      const vec4& light_position,
+      const vec4& ambient_color = vec4(0.0f, 0.0f, 0.0f, 1.0f),
+      const vec4& diffuse_color = vec4(1.0f, 1.0f, 1.0f, 1.0f),
+      const vec4& specular_color = vec4(1.0f, 1.0f, 1.0f, 1.0f),
+      const vec3& spotlight_direction = vec3(0.0f, 0.0f, -1.0f),
+      const float& spotlight_exponent = 0.0f,
+      const float& spotlight_cutoff_angle_in_degree = 180.0f,
+      const vec3& attenuation_factor = vec3(1.0f, 0.0f, 0.0f)
+   );
+
+   void setGlobalAmbientColor(const vec4& global_ambient_color);
+   void setAmbientColor(const vec4& ambient_color, const uint& light_index);
+   void setDiffuseColor(const vec4& diffuse_color, const uint& light_index);
+   void setSpecularColor(const vec4& specular_color, const uint& light_index);
+   void setSpotlightDirection(const vec3& spotlight_direction, const uint& light_index);
+   void setSpotlightExponent(const float& spotlight_exponent, const uint& light_index);
+   void setSpotlightCutoffAngle(const float& spotlight_cutoff_angle_in_degree, const uint& light_index);
+   void setAttenuationFactor(const vec3& attenuation_factor, const uint& light_index);
+   void setLightPosition(const vec4& light_position, const uint& light_index);
+   void activateLight(const uint& light_index);
+   void deactivateLight(const uint& light_index);
+};
+
 class CameraGL
 {
    const float ZoomSensitivity;
@@ -91,42 +158,47 @@ public:
    GLenum DrawMode;
    GLuint TextureID;
    GLsizei VerticesCount;
-   vec3 Colors;
+   vec4 EmissionColor;
+   vec4 AmbientReflectionColor; // It is usually set to the same color with DiffuseReflectionColor.
+                                // Otherwise, it should be in balance with DiffuseReflectionColor.
+   vec4 DiffuseReflectionColor; // the intrinsic color
+   vec4 SpecularReflectionColor;
+
 
    ObjectGL();
 
+   void setEmissionColor(const vec4& emission_color);
+   void setAmbientReflectionColor(const vec4& ambient_reflection_color);
+   void setDiffuseReflectionColor(const vec4& diffuse_reflection_color);
+   void setSpecularReflectionColor(const vec4& specular_reflection_color);
+
    void setObject(
-      GLenum draw_mode, 
-      const vec3& color,
+      const GLenum& draw_mode, 
       const vector<vec3>& vertices
    );
 
    void setObject(
-      GLenum draw_mode, 
-      const vec3& color,
+      const GLenum& draw_mode, 
       const vector<vec3>& vertices,
       const vector<vec3>& normals
    );
 
    void setObject(
-      GLenum draw_mode, 
-      const vec3& color,
+      const GLenum& draw_mode, 
       const vector<vec3>& vertices,
       const vector<vec2>& textures,
       const string& texture_file_name
    );
 
    void setObject(
-      GLenum draw_mode, 
-      const vec3& color,
+      const GLenum& draw_mode, 
       const vector<vec3>& vertices,
       const vector<vec2>& textures,
       const Mat& texture
    );
 
    void setObject(
-      GLenum draw_mode, 
-      const vec3& color,
+      const GLenum& draw_mode, 
       const vector<vec3>& vertices, 
       const vector<vec3>& normals, 
       const vector<vec2>& textures,
@@ -134,28 +206,14 @@ public:
    );
 
    void setObject(
-      GLenum draw_mode, 
-      const vec3& color,
+      const GLenum& draw_mode, 
       const vector<vec3>& vertices, 
       const vector<vec3>& normals, 
       const vector<vec2>& textures,
       const Mat& texture
    );
-};
 
-class ShaderGL
-{
-   void readShaderFile(string& shader_contents, const char* shader_path) const;
-
-public:
-   GLuint ShaderProgram;
-   GLint MVPLocation, WorldLocation, ViewLocation, ProjectionLocation;
-   GLint ColorLocation, TextureLocation;
-   GLint LightLocation, LightColorLocation;
-   
-   ShaderGL();
-
-   void setShader(const char* vertex_shader_path, const char* fragment_shader_path);
+   void transferUniformsToShader(ShaderGL& shader, CameraGL& camera, const mat4& to_world);
 };
 
 class RendererGL
@@ -163,11 +221,10 @@ class RendererGL
    struct Light
    {
       bool TurnLightOn;
-      int TotalNumber;
-      int ActivatedIndex;
+      uint ActivatedIndex;
       vector<vec3> Colors;
       vector<vec3> Positions;
-      Light() : TurnLightOn( false ), TotalNumber( 0 ), ActivatedIndex( 0 ) {}
+      Light() : TurnLightOn( false ), ActivatedIndex( 0 ) {}
    };
 
    static RendererGL* Renderer;
@@ -179,7 +236,11 @@ class RendererGL
    ShaderGL ObjectShader;
    ObjectGL Object;
 
+   LightGL Lights;
+   Light LightManager;
+
    bool DrawMovingObject;
+   int ObjectRotationAngle;
  
    void registerCallbacks() const;
    void initializeOpenGL(const int& width, const int& height);
@@ -202,8 +263,9 @@ class RendererGL
    static void mousewheelWrapper(GLFWwindow* window, double xoffset, double yoffset);
    static void reshapeWrapper(GLFWwindow* window, int width, int height);
 
+   void setLight();
    void setObject();
-   void drawObject(const float& scale_factor);
+   void drawObject(const float& scale_factor = 1.0f);
    void render();
    void update();
 

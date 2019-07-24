@@ -1,5 +1,212 @@
 #include "Renderer.h"
 
+//------------------------------------------------------------------
+//
+// Shader Class
+//
+//------------------------------------------------------------------
+
+ShaderGL::ShaderGL() : 
+   ShaderProgram( 0 ), MVPLocation( 0 ), WorldLocation( 0 ), ViewLocation( 0 ), 
+   ProjectionLocation( 0 ), ColorLocation( 0 ), TextureLocation( 0 ), 
+   LightLocation( 0 ), LightColorLocation( 0 ), LightSwitchLocation( 0 )
+{
+}
+
+void ShaderGL::readShaderFile(string& shader_contents, const char* shader_path) const
+{
+   ifstream file(shader_path, ios::in);
+   if (!file.is_open()) {
+      cout << "Cannot Open Shader File: " << shader_path << endl;
+      return;
+   }
+
+   string line;
+   while (!file.eof()) {
+      getline( file, line );
+      shader_contents.append( line + "\n" );
+   }
+   file.close();
+}
+
+bool ShaderGL::checkCompileErrors(const GLuint& vertex_shader, const GLuint& fragment_shader)
+{
+   GLint compiled[2] = { 0, 0 };
+   glGetShaderiv( vertex_shader, GL_COMPILE_STATUS, &compiled[0] );
+   glGetShaderiv( fragment_shader, GL_COMPILE_STATUS, &compiled[1] );
+
+   GLuint shaders[2] = { vertex_shader, fragment_shader };
+   for (int i = 0; i <= 1; ++i) {
+      if (compiled[i] == GL_FALSE) {
+         GLint max_length = 0;
+         glGetShaderiv( shaders[i], GL_INFO_LOG_LENGTH, &max_length );
+
+         if (i == 0) cout << " === Vertex Shader Log ===" << endl;
+         else cout << " === Fragment Shader Log ===" << endl;
+
+         vector<GLchar> error_log(max_length);
+         glGetShaderInfoLog( shaders[i], max_length, &max_length, &error_log[0] );
+         for (const auto& c : error_log) {
+            cout << c;
+         }
+         glDeleteShader( shaders[i] );
+      }
+   }
+   return compiled[0] && compiled[1];
+}
+
+void ShaderGL::setShader(const char* vertex_shader_path, const char* fragment_shader_path)
+{
+   string vertex_contents, fragment_contents;
+   readShaderFile( vertex_contents, vertex_shader_path );
+   readShaderFile( fragment_contents, fragment_shader_path );
+
+   const GLuint vertex_shader = glCreateShader( GL_VERTEX_SHADER );
+   const GLuint fragment_shader = glCreateShader( GL_FRAGMENT_SHADER );
+   const char* vertex_source = vertex_contents.c_str();
+   const char* fragment_source = fragment_contents.c_str();
+   glShaderSource( vertex_shader, 1, &vertex_source, nullptr );
+   glShaderSource( fragment_shader, 1, &fragment_source, nullptr );
+   glCompileShader( vertex_shader );
+   glCompileShader( fragment_shader );
+   if (!checkCompileErrors( vertex_shader, fragment_shader )) return;
+
+   ShaderProgram = glCreateProgram();
+   glAttachShader( ShaderProgram, vertex_shader );
+   glAttachShader( ShaderProgram, fragment_shader );
+   glLinkProgram( ShaderProgram );
+
+   MVPLocation = glGetUniformLocation( ShaderProgram, "ModelViewProjectionMatrix" );
+   WorldLocation = glGetUniformLocation( ShaderProgram, "WorldMatrix" );
+   ViewLocation = glGetUniformLocation( ShaderProgram, "ViewMatrix" );
+   ProjectionLocation = glGetUniformLocation( ShaderProgram, "ProjectionMatrix" );
+
+   ColorLocation = glGetUniformLocation( ShaderProgram, "PrimitiveColor" );
+   TextureLocation = glGetUniformLocation( ShaderProgram, "BaseTexture" );
+
+   LightLocation = glGetUniformLocation( ShaderProgram, "LightPosition" );
+   LightColorLocation = glGetUniformLocation( ShaderProgram, "LightColor" );
+   LightSwitchLocation = glGetUniformLocation( ShaderProgram, "LightIsOn" );
+
+   glDeleteShader( vertex_shader );
+   glDeleteShader( fragment_shader );
+}
+
+
+//------------------------------------------------------------------
+//
+// Light Class
+//
+//------------------------------------------------------------------
+
+LightGL::LightGL() :
+   TurnLightOn( true ), TotalLightNum( 0 ), GlobalAmbientColor( 0.2f, 0.2f, 0.2f, 1.0f )
+{
+}
+
+bool LightGL::isLightOn() const
+{
+   return TurnLightOn;
+}
+
+void LightGL::turnLightOn(const bool& light_on)
+{
+   TurnLightOn = light_on;
+}
+
+void LightGL::addLight(
+   const vec4& light_position,
+   const vec4& ambient_color,
+   const vec4& diffuse_color,
+   const vec4& specular_color,
+   const vec3& spotlight_direction,
+   const float& spotlight_exponent,
+   const float& spotlight_cutoff_angle_in_degree,
+   const vec3& attenuation_factor
+)
+{
+   Positions.emplace_back( light_position );
+   
+   AmbientColors.emplace_back( ambient_color );
+   DiffuseColors.emplace_back( diffuse_color );
+   SpecularColors.emplace_back( specular_color );
+
+   SpotlightDirections.emplace_back( spotlight_direction );
+   SpotlightExponent.emplace_back( spotlight_exponent );
+   SpotlightCutoffAngles.emplace_back( spotlight_cutoff_angle_in_degree );
+
+   AttenuationFactors.emplace_back( attenuation_factor );
+
+   IsActivated.emplace_back( true );
+
+   TotalLightNum = Positions.size();
+}
+
+void LightGL::setGlobalAmbientColor(const vec4& global_ambient_color)
+{
+   GlobalAmbientColor = global_ambient_color;
+}
+
+void LightGL::setAmbientColor(const vec4& ambient_color, const uint& light_index)
+{
+   if (light_index >= TotalLightNum) return;
+   AmbientColors[light_index] = ambient_color;
+}
+
+void LightGL::setDiffuseColor(const vec4& diffuse_color, const uint& light_index)
+{
+   if (light_index >= TotalLightNum) return;
+   DiffuseColors[light_index] = diffuse_color;
+}
+
+void LightGL::setSpecularColor(const vec4& specular_color, const uint& light_index)
+{
+   if (light_index >= TotalLightNum) return;
+   SpecularColors[light_index] = specular_color;
+}
+
+void LightGL::setSpotlightDirection(const vec3& spotlight_direction, const uint& light_index)
+{
+   if (light_index >= TotalLightNum) return;
+   SpotlightDirections[light_index] = spotlight_direction;
+}
+
+void LightGL::setSpotlightExponent(const float& spotlight_exponent, const uint& light_index)
+{
+   if (light_index >= TotalLightNum) return;
+   SpotlightExponent[light_index] = spotlight_exponent;
+}
+
+void LightGL::setSpotlightCutoffAngle(const float& spotlight_cutoff_angle_in_degree, const uint& light_index)
+{
+   if (light_index >= TotalLightNum) return;
+   SpotlightCutoffAngles[light_index] = spotlight_cutoff_angle_in_degree;
+}
+
+void LightGL::setAttenuationFactor(const vec3& attenuation_factor, const uint& light_index)
+{
+   if (light_index >= TotalLightNum) return;
+   AttenuationFactors[light_index] = attenuation_factor;
+}
+
+void LightGL::setLightPosition(const vec4& light_position, const uint& light_index)
+{
+   if (light_index >= TotalLightNum) return;
+   Positions[light_index] = light_position;
+}
+
+void LightGL::activateLight(const uint& light_index)
+{
+   if (light_index >= TotalLightNum) return;
+   IsActivated[light_index] = true;
+}
+
+void LightGL::deactivateLight(const uint& light_index)
+{
+   if (light_index >= TotalLightNum) return;
+   IsActivated[light_index] = false;
+}
+
 
 //------------------------------------------------------------------
 //
@@ -138,8 +345,31 @@ void CameraGL::updateWindowSize(const int& width, const int& height)
 //
 //------------------------------------------------------------------
 
-ObjectGL::ObjectGL() : ObjVAO( 0 ), ObjVBO( 0 ), DrawMode( 0 ), TextureID( 0 ), VerticesCount( 0 ), Colors{}
+ObjectGL::ObjectGL() : 
+   ObjVAO( 0 ), ObjVBO( 0 ), DrawMode( 0 ), TextureID( 0 ), VerticesCount( 0 ),
+   EmissionColor( 0.0f, 0.0f, 0.0f, 1.0f ), AmbientReflectionColor( 0.2f, 0.2f, 0.2f, 1.0f ),
+   DiffuseReflectionColor( 0.8f, 0.8f, 0.8f, 1.0f ), SpecularReflectionColor( 0.0f, 0.0f, 0.0f, 1.0f )
 {
+}
+
+void ObjectGL::setEmissionColor(const vec4& emission_color)
+{
+   EmissionColor = emission_color;
+}
+
+void ObjectGL::setAmbientReflectionColor(const vec4& ambient_reflection_color)
+{
+   AmbientReflectionColor = ambient_reflection_color;   
+}
+
+void ObjectGL::setDiffuseReflectionColor(const vec4& diffuse_reflection_color)
+{
+   DiffuseReflectionColor = diffuse_reflection_color;
+}
+
+void ObjectGL::setSpecularReflectionColor(const vec4& specular_reflection_color)
+{
+   SpecularReflectionColor = specular_reflection_color;
 }
 
 void ObjectGL::prepareTexture2DFromMat(const Mat& texture) const
@@ -249,13 +479,11 @@ void ObjectGL::prepareVertexBuffer(const int& n_bytes_per_vertex)
 }
 
 void ObjectGL::setObject(
-   GLenum draw_mode, 
-   const vec3& color, 
+   const GLenum& draw_mode,  
    const vector<vec3>& vertices
 )
 {
    DrawMode = draw_mode;
-   Colors = { color.r, color.g, color.b };
    for (auto& vertex : vertices) {
       DataBuffer.push_back( vertex.x );
       DataBuffer.push_back( vertex.y );
@@ -267,14 +495,12 @@ void ObjectGL::setObject(
 }
 
 void ObjectGL::setObject(
-   GLenum draw_mode, 
-   const vec3& color, 
+   const GLenum& draw_mode, 
    const vector<vec3>& vertices,
    const vector<vec3>& normals
 )
 {
    DrawMode = draw_mode;
-   Colors = { color.r, color.g, color.b };
    for (uint i = 0; i < vertices.size(); ++i) {
       DataBuffer.push_back( vertices[i].x );
       DataBuffer.push_back( vertices[i].y );
@@ -290,15 +516,13 @@ void ObjectGL::setObject(
 }
 
 void ObjectGL::setObject(
-   GLenum draw_mode, 
-   const vec3& color, 
+   const GLenum& draw_mode, 
    const vector<vec3>& vertices,
    const vector<vec2>& textures, 
    const string& texture_file_name
 )
 {
    DrawMode = draw_mode;
-   Colors = { color.r, color.g, color.b };
    for (uint i = 0; i < vertices.size(); ++i) {
       DataBuffer.push_back( vertices[i].x );
       DataBuffer.push_back( vertices[i].y );
@@ -313,15 +537,13 @@ void ObjectGL::setObject(
 }
 
 void ObjectGL::setObject(
-   GLenum draw_mode, 
-   const vec3& color, 
+   const GLenum& draw_mode, 
    const vector<vec3>& vertices,
    const vector<vec2>& textures, 
    const Mat& texture
 )
 {
    DrawMode = draw_mode;
-   Colors = { color.r, color.g, color.b };
    for (uint i = 0; i < vertices.size(); ++i) {
       DataBuffer.push_back( vertices[i].x );
       DataBuffer.push_back( vertices[i].y );
@@ -336,8 +558,7 @@ void ObjectGL::setObject(
 }
 
 void ObjectGL::setObject(
-   GLenum draw_mode, 
-   const vec3& color, 
+   const GLenum& draw_mode, 
    const vector<vec3>& vertices, 
    const vector<vec3>& normals, 
    const vector<vec2>& textures,
@@ -345,7 +566,6 @@ void ObjectGL::setObject(
 )
 {
    DrawMode = draw_mode;
-   Colors = { color.r, color.g, color.b };
    for (uint i = 0; i < vertices.size(); ++i) {
       DataBuffer.push_back( vertices[i].x );
       DataBuffer.push_back( vertices[i].y );
@@ -364,8 +584,7 @@ void ObjectGL::setObject(
 }
 
 void ObjectGL::setObject(
-   GLenum draw_mode, 
-   const vec3& color, 
+   const GLenum& draw_mode, 
    const vector<vec3>& vertices,
    const vector<vec3>& normals, 
    const vector<vec2>& textures, 
@@ -373,7 +592,6 @@ void ObjectGL::setObject(
 )
 {
    DrawMode = draw_mode;
-   Colors = { color.r, color.g, color.b };
    for (uint i = 0; i < vertices.size(); ++i) {
       DataBuffer.push_back( vertices[i].x );
       DataBuffer.push_back( vertices[i].y );
@@ -391,69 +609,26 @@ void ObjectGL::setObject(
    prepareTexture( n_bytes_per_vertex, texture, true );
 }
 
-
-//------------------------------------------------------------------
-//
-// Shader Class
-//
-//------------------------------------------------------------------
-
-ShaderGL::ShaderGL() : 
-   ShaderProgram( 0 ), MVPLocation( 0 ), WorldLocation( 0 ), ViewLocation( 0 ), 
-   ProjectionLocation( 0 ), ColorLocation( 0 ), TextureLocation( 0 ), 
-   LightLocation( 0 ), LightColorLocation( 0 )
+void ObjectGL::transferUniformsToShader(ShaderGL& shader, CameraGL& camera, const mat4& to_world)
 {
-}
+   const mat4 model_view_projection = camera.ProjectionMatrix * camera.ViewMatrix * to_world;
+   glUniformMatrix4fv( shader.MVPLocation, 1, GL_FALSE, &model_view_projection[0][0] );
+   glUniformMatrix4fv( shader.WorldLocation, 1, GL_FALSE, &to_world[0][0]);
+   glUniformMatrix4fv( shader.ViewLocation, 1, GL_FALSE, &camera.ViewMatrix[0][0]);
+   glUniformMatrix4fv( shader.ProjectionLocation, 1, GL_FALSE, &camera.ProjectionMatrix[0][0]);
 
-void ShaderGL::readShaderFile(string& shader_contents, const char* shader_path) const
-{
-   ifstream file(shader_path, ios::in);
-   if (!file.is_open()) {
-      cout << "Cannot Open Shader File: " << shader_path << endl;
-      return;
-   }
-
-   string line;
-   while (!file.eof()) {
-      getline( file, line );
-      shader_contents.append( line + "\n" );
-   }
-   file.close();
-}
-
-void ShaderGL::setShader(const char* vertex_shader_path, const char* fragment_shader_path)
-{
-   string vertex_contents, fragment_contents;
-   readShaderFile( vertex_contents, vertex_shader_path );
-   readShaderFile( fragment_contents, fragment_shader_path );
-
-   const GLuint vertex_shader = glCreateShader( GL_VERTEX_SHADER );
-   const GLuint fragment_shader = glCreateShader( GL_FRAGMENT_SHADER );
-   const char* vertex_source = vertex_contents.c_str();
-   const char* fragment_source = fragment_contents.c_str();
-   glShaderSource( vertex_shader, 1, &vertex_source, nullptr );
-   glShaderSource( fragment_shader, 1, &fragment_source, nullptr );
-   glCompileShader( vertex_shader );
-   glCompileShader( fragment_shader );
-
-   ShaderProgram = glCreateProgram();
-   glAttachShader( ShaderProgram, vertex_shader );
-   glAttachShader( ShaderProgram, fragment_shader );
-   glLinkProgram( ShaderProgram );
-
-   MVPLocation = glGetUniformLocation( ShaderProgram, "ModelViewProjectionMatrix" );
-   WorldLocation = glGetUniformLocation( ShaderProgram, "WorldMatrix" );
-   ViewLocation = glGetUniformLocation( ShaderProgram, "ViewMatrix" );
-   ProjectionLocation = glGetUniformLocation( ShaderProgram, "ProjectionMatrix" );
-
-   ColorLocation = glGetUniformLocation( ShaderProgram, "PrimitiveColor" );
-   TextureLocation = glGetUniformLocation( ShaderProgram, "BaseTexture" );
-
-   LightLocation = glGetUniformLocation( ShaderProgram, "LightPosition" );
-   LightColorLocation = glGetUniformLocation( ShaderProgram, "LightColor" );
-
-   glDeleteShader( vertex_shader );
-   glDeleteShader( fragment_shader );
+   //vec3 light_color(0.0f), light_position(0.0f);
+   //if (LightManager.TurnLightOn) {
+   //   light_color = LightManager.Colors[LightManager.ActivatedIndex];
+   //   light_position = LightManager.Positions[LightManager.ActivatedIndex];
+   //}
+   //glUniform3fv( shader.LightLocation, 1, &light_position[0] );
+   //glUniform3fv( shader.LightColorLocation, 1, &light_color[0] );
+   //glUniform1i( shader.LightSwitchLocation, LightManager.TurnLightOn ? 1 : 0 );
+   
+   glBindVertexArray( ObjVAO );
+   glUniform1i( shader.TextureLocation, TextureID );
+   //glUniform3fv( shader.ColorLocation, 1, value_ptr( Colors ) );
 }
 
 
@@ -464,7 +639,8 @@ void ShaderGL::setShader(const char* vertex_shader_path, const char* fragment_sh
 //------------------------------------------------------------------
 
 RendererGL* RendererGL::Renderer = nullptr;
-RendererGL::RendererGL() : Window( nullptr ), DrawMovingObject( false )
+RendererGL::RendererGL() : 
+   Window( nullptr ), ClickedPoint( -1.0f, -1.0f ), DrawMovingObject( false ), ObjectRotationAngle( 0 )
 {
    Renderer = this;
 
@@ -494,7 +670,7 @@ void RendererGL::initializeOpenGL(const int& width, const int& height)
       cout << "Cannot Initialize OpenGL..." << endl;
       return;
    }
-   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
+   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3 );
    glfwWindowHint( GLFW_DOUBLEBUFFER, GLFW_TRUE );
    glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
@@ -571,6 +747,16 @@ void RendererGL::keyboard(GLFWwindow* window, int key, int scancode, int action,
          break;
       case GLFW_KEY_I:
          MainCamera.resetCamera();
+         break;
+      case GLFW_KEY_L:
+         LightManager.TurnLightOn = !LightManager.TurnLightOn;
+         LightManager.ActivatedIndex = 0;
+         cout << "Light Turned " << (LightManager.TurnLightOn ? "On!" : "Off!") << endl;
+         break;
+      case GLFW_KEY_ENTER:
+         LightManager.ActivatedIndex++;
+         if (LightManager.ActivatedIndex == LightManager.Colors.size()) LightManager.ActivatedIndex = 0;
+         cout << "Light-" << LightManager.ActivatedIndex << " Activated!" << endl;
          break;
       case GLFW_KEY_SPACE:
          DrawMovingObject = !DrawMovingObject;
@@ -664,6 +850,32 @@ void RendererGL::registerCallbacks() const
    glfwSetFramebufferSizeCallback( Window, reshapeWrapper );
 }
 
+void RendererGL::setLight()
+{  
+   vec4 light_position(0.0f, 10.0f, -5.0f, 1.0f);
+   vec4 ambient_color(0.3f, 0.3f, 0.3f, 1.0f);
+   vec4 diffuse_color(0.7f, 0.7f, 0.7f, 1.0f);
+   vec4 specular_color(0.9f, 0.9f, 0.9f, 1.0f);
+   Lights.addLight( light_position, ambient_color, diffuse_color, specular_color );
+
+   light_position = vec4(-20.0f, 50.0f, -20.0f, 1.0f);
+   ambient_color = vec4(0.2f, 0.2f, 0.2f, 1.0f);
+   diffuse_color = vec4(0.82f, 0.82f, 0.82f, 1.0f);
+   specular_color = vec4(0.82f, 0.82f, 0.82f, 1.0f);
+   vec3 spotlight_direction(0.0f, -1.0f, 0.0f);
+   float spotlight_exponent = 27.0f;
+   float spotlight_cutoff_angle_in_degree = 20.0f;
+   Lights.addLight( 
+      light_position, 
+      ambient_color, 
+      diffuse_color, 
+      specular_color,
+      spotlight_direction,
+      spotlight_exponent,
+      spotlight_cutoff_angle_in_degree
+   );  
+}
+
 void RendererGL::setObject()
 {
    if (Object.ObjVAO != 0) {
@@ -679,9 +891,20 @@ void RendererGL::setObject()
    square_vertices.emplace_back( 1.0f, 0.0f, 0.0f );
    square_vertices.emplace_back( 0.0f, 1.0f, 0.0f );
    square_vertices.emplace_back( 0.0f, 0.0f, 0.0f );
+
+   vector<vec3> square_normals;
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
    
-   const vec3 color = { 0.5f, 0.7f, 0.2f };
-   Object.setObject( GL_TRIANGLES, color, square_vertices );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   
+   Object.setObject( GL_TRIANGLES, square_vertices, square_normals );
+
+   const vec4 diffuse_color = { 0.5f, 0.7f, 0.2f, 1.0f };
+   Object.setDiffuseReflectionColor( diffuse_color );
 }
 
 void RendererGL::drawObject(const float& scale_factor)
@@ -690,12 +913,28 @@ void RendererGL::drawObject(const float& scale_factor)
 
    const mat4 to_origin = translate( mat4(1.0f), vec3(-0.5f, -0.5f, 0.0f) );
    const mat4 scale_matrix = scale( mat4(1.0f), vec3(scale_factor, scale_factor, scale_factor) );
-   const mat4 model_view_projection = MainCamera.ProjectionMatrix * MainCamera.ViewMatrix * scale_matrix * to_origin;
+   mat4 to_world = scale_matrix * to_origin;
+   if (DrawMovingObject) {
+      to_world = rotate( mat4(1.0f), static_cast<float>(ObjectRotationAngle), vec3(0.0f, 0.0f, 1.0f) ) * to_world;
+   }
+
+   Object.transferUniformsToShader( ObjectShader, MainCamera, to_world );
+
+   const mat4 model_view_projection = MainCamera.ProjectionMatrix * MainCamera.ViewMatrix * to_world;
    glUniformMatrix4fv( ObjectShader.MVPLocation, 1, GL_FALSE, &model_view_projection[0][0] );
-   glUniform1i( ObjectShader.TextureLocation, Object.TextureID );
+
+   vec3 light_color(0.0f), light_position(0.0f);
+   if (LightManager.TurnLightOn) {
+      light_color = LightManager.Colors[LightManager.ActivatedIndex];
+      light_position = LightManager.Positions[LightManager.ActivatedIndex];
+   }
+   glUniform3fv( ObjectShader.LightLocation, 1, &light_position[0] );
+   glUniform3fv( ObjectShader.LightColorLocation, 1, &light_color[0] );
+   glUniform1i( ObjectShader.LightSwitchLocation, LightManager.TurnLightOn ? 1 : 0 );
    
    glBindVertexArray( Object.ObjVAO );
-   glUniform3fv( ObjectShader.ColorLocation, 1, value_ptr( Object.Colors ) );
+   glUniform1i( ObjectShader.TextureLocation, Object.TextureID );
+   //glUniform3fv( ObjectShader.ColorLocation, 1, value_ptr( Object.Colors ) );
    glDrawArrays( Object.DrawMode, 0, Object.VerticesCount );
 }
 
@@ -712,8 +951,8 @@ void RendererGL::render()
 void RendererGL::update()
 {
    if (DrawMovingObject) {
-      //TigerRotationAngle += 3;
-      //if (TigerRotationAngle == 360) TigerRotationAngle = 0;
+      ObjectRotationAngle += 3;
+      if (ObjectRotationAngle == 360) ObjectRotationAngle = 0;
    }
 }
 
@@ -721,6 +960,7 @@ void RendererGL::play()
 {
    if (glfwWindowShouldClose( Window )) initialize();
 
+   setLight();
    setObject();
 
    const double update_time = 0.1;
