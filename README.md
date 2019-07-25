@@ -14,7 +14,7 @@
   * OpenGL
 
 ## Keyboard Commands
-  * **Space key**: object moving
+  * **space bar**: object moving
   * **l key**: toggle light effects
   * **i key**: reset the main camera
   * **w key**: move up
