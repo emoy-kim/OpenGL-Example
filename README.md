@@ -1,6 +1,6 @@
 # OpenGL-Example
 
-![alt text](https://github.com/emoy-kim/OpenGL-Example/tree/master/OpenGL-Example/Results/no_lighting.PNG)
+![no_lighting](https://user-images.githubusercontent.com/17864157/61874429-55389b00-af23-11e9-8937-90d58938d621.PNG)
 
   
 ## Test Environment
