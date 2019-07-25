@@ -19,8 +19,8 @@
   * **i key**: reset the main camera
   * **w key**: move up
   * **s key**: move down
-  * **a key**: move left
-  * **d key**: move right
   * **Up arrow**: move forward
   * **Down arrow**: move backward
+  * **Left arrow**: move left
+  * **Right arrow**: move right
   * **q key**: exit
