@@ -25,42 +25,62 @@ class ShaderGL
    bool checkCompileErrors(const GLuint& vertex_shader, const GLuint& fragment_shader);
 
 public:
-   GLuint ShaderProgram;
-   GLint MVPLocation, WorldLocation, ViewLocation, ProjectionLocation;
-   GLint ColorLocation, TextureLocation;
-   GLint LightLocation, LightColorLocation, LightSwitchLocation;
+   struct LightLocationSet
+   {
+      GLint LightSwitch, LightPosition;
+      GLint LightAmbient, LightDiffuse, LightSpecular, LightAttenuationFactors;
+      GLint SpotlightDirection, SpotlightExponent, SpotlightCutoffAngle;
+      LightLocationSet() : LightSwitch( 0 ), LightPosition( 0 ), LightAmbient( 0 ), LightDiffuse( 0 ), LightSpecular( 0 ), 
+      LightAttenuationFactors( 0 ), SpotlightDirection( 0 ), SpotlightExponent( 0 ), SpotlightCutoffAngle( 0 ) {}
+   };
+
+   struct LocationSet
+   {
+      GLint World, View, Projection, ModelViewProjection;
+      GLint MaterialEmission, MaterialAmbient, MaterialDiffuse, MaterialSpecular, MaterialSpecularExponent;
+      GLint Texture;
+      GLint UseLight, LightNum, GlobalAmbient;
+      vector<LightLocationSet> Lights;
+      LocationSet() : World( 0 ), View( 0 ), Projection( 0 ), ModelViewProjection( 0 ), MaterialEmission( 0 ),
+      MaterialAmbient( 0 ), MaterialDiffuse( 0 ), MaterialSpecular( 0 ), MaterialSpecularExponent( 0 ), 
+      Texture( 0 ), UseLight( 0 ), LightNum( 0 ), GlobalAmbient( 0 ) {}
+   };
    
+   LocationSet Location;
+   GLuint ShaderProgram;
+
    ShaderGL();
 
    void setShader(const char* vertex_shader_path, const char* fragment_shader_path);
+   void setUniformLocations(const uint& light_num);
 };
 
 class LightGL
 {
    bool TurnLightOn;
-   uint TotalLightNum;
 
    vec4 GlobalAmbientColor;
 
+   vector<bool> IsActivated;
+   vector<vec4> Positions;
+   
    vector<vec4> AmbientColors;
    vector<vec4> DiffuseColors;
    vector<vec4> SpecularColors;
 
    vector<vec3> SpotlightDirections;
-   vector<float> SpotlightExponent;
+   vector<float> SpotlightExponents;
    vector<float> SpotlightCutoffAngles;
 
    vector<vec3> AttenuationFactors;
-   
-   vector<vec4> Positions;
-
-   vector<bool> IsActivated;
 
 public:
+   uint TotalLightNum;
+
    LightGL();
 
    bool isLightOn() const;
-   void turnLightOn(const bool& light_on);
+   void toggleLightSwitch();
 
    void addLight(
       const vec4& light_position,
@@ -84,6 +104,8 @@ public:
    void setLightPosition(const vec4& light_position, const uint& light_index);
    void activateLight(const uint& light_index);
    void deactivateLight(const uint& light_index);
+
+   void transferUniformsToShader(ShaderGL& shader);
 };
 
 class CameraGL
@@ -163,6 +185,7 @@ public:
                                 // Otherwise, it should be in balance with DiffuseReflectionColor.
    vec4 DiffuseReflectionColor; // the intrinsic color
    vec4 SpecularReflectionColor;
+   float SpecularReflectionExponent;
 
 
    ObjectGL();
@@ -171,6 +194,7 @@ public:
    void setAmbientReflectionColor(const vec4& ambient_reflection_color);
    void setDiffuseReflectionColor(const vec4& diffuse_reflection_color);
    void setSpecularReflectionColor(const vec4& specular_reflection_color);
+   void setSpecularReflectionExponent(const float& specular_reflection_exponent);
 
    void setObject(
       const GLenum& draw_mode, 
@@ -213,20 +237,11 @@ public:
       const Mat& texture
    );
 
-   void transferUniformsToShader(ShaderGL& shader, CameraGL& camera, const mat4& to_world);
+   void transferUniformsToShader(ShaderGL& shader);
 };
 
 class RendererGL
 {
-   struct Light
-   {
-      bool TurnLightOn;
-      uint ActivatedIndex;
-      vector<vec3> Colors;
-      vector<vec3> Positions;
-      Light() : TurnLightOn( false ), ActivatedIndex( 0 ) {}
-   };
-
    static RendererGL* Renderer;
    GLFWwindow* Window;
 
@@ -237,13 +252,11 @@ class RendererGL
    ObjectGL Object;
 
    LightGL Lights;
-   Light LightManager;
 
    bool DrawMovingObject;
    int ObjectRotationAngle;
  
    void registerCallbacks() const;
-   void initializeOpenGL(const int& width, const int& height);
    void initialize();
 
    void printOpenGLInformation() const;
@@ -263,7 +276,7 @@ class RendererGL
    static void mousewheelWrapper(GLFWwindow* window, double xoffset, double yoffset);
    static void reshapeWrapper(GLFWwindow* window, int width, int height);
 
-   void setLight();
+   void setLights();
    void setObject();
    void drawObject(const float& scale_factor = 1.0f);
    void render();

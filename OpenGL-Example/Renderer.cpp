@@ -6,10 +6,7 @@
 //
 //------------------------------------------------------------------
 
-ShaderGL::ShaderGL() : 
-   ShaderProgram( 0 ), MVPLocation( 0 ), WorldLocation( 0 ), ViewLocation( 0 ), 
-   ProjectionLocation( 0 ), ColorLocation( 0 ), TextureLocation( 0 ), 
-   LightLocation( 0 ), LightColorLocation( 0 ), LightSwitchLocation( 0 )
+ShaderGL::ShaderGL() : ShaderProgram( 0 )
 {
 }
 
@@ -75,21 +72,42 @@ void ShaderGL::setShader(const char* vertex_shader_path, const char* fragment_sh
    glAttachShader( ShaderProgram, vertex_shader );
    glAttachShader( ShaderProgram, fragment_shader );
    glLinkProgram( ShaderProgram );
-
-   MVPLocation = glGetUniformLocation( ShaderProgram, "ModelViewProjectionMatrix" );
-   WorldLocation = glGetUniformLocation( ShaderProgram, "WorldMatrix" );
-   ViewLocation = glGetUniformLocation( ShaderProgram, "ViewMatrix" );
-   ProjectionLocation = glGetUniformLocation( ShaderProgram, "ProjectionMatrix" );
-
-   ColorLocation = glGetUniformLocation( ShaderProgram, "PrimitiveColor" );
-   TextureLocation = glGetUniformLocation( ShaderProgram, "BaseTexture" );
-
-   LightLocation = glGetUniformLocation( ShaderProgram, "LightPosition" );
-   LightColorLocation = glGetUniformLocation( ShaderProgram, "LightColor" );
-   LightSwitchLocation = glGetUniformLocation( ShaderProgram, "LightIsOn" );
-
+   
    glDeleteShader( vertex_shader );
    glDeleteShader( fragment_shader );
+}
+
+void ShaderGL::setUniformLocations(const uint& light_num)
+{
+   Location.World = glGetUniformLocation( ShaderProgram, "WorldMatrix" );
+   Location.View = glGetUniformLocation( ShaderProgram, "ViewMatrix" );
+   Location.Projection = glGetUniformLocation( ShaderProgram, "ProjectionMatrix" );
+   Location.ModelViewProjection = glGetUniformLocation( ShaderProgram, "ModelViewProjectionMatrix" );
+
+   Location.MaterialEmission = glGetUniformLocation( ShaderProgram, "Material.EmissionColor" );
+   Location.MaterialAmbient = glGetUniformLocation( ShaderProgram, "Material.AmbientColor" );
+   Location.MaterialDiffuse = glGetUniformLocation( ShaderProgram, "Material.DiffuseColor" );
+   Location.MaterialSpecular = glGetUniformLocation( ShaderProgram, "Material.SpecularColor" );
+   Location.MaterialSpecularExponent = glGetUniformLocation( ShaderProgram, "Material.SpecularExponent" );
+
+   Location.Texture = glGetUniformLocation( ShaderProgram, "BaseTexture" );
+
+   Location.UseLight = glGetUniformLocation( ShaderProgram, "UseLight" );
+   Location.LightNum = glGetUniformLocation( ShaderProgram, "LightNum" );
+   Location.GlobalAmbient = glGetUniformLocation( ShaderProgram, "GlobalAmbient" );
+
+   Location.Lights.resize( light_num );
+   for (uint i = 0; i < light_num; ++i) {
+      Location.Lights[i].LightSwitch = glGetUniformLocation( ShaderProgram, string("Lights[" + to_string( i ) + "].LightSwitch").c_str() );
+      Location.Lights[i].LightPosition = glGetUniformLocation( ShaderProgram, string("Lights[" + to_string( i ) + "].Position").c_str() );
+      Location.Lights[i].LightAmbient = glGetUniformLocation( ShaderProgram, string("Lights[" + to_string( i ) + "].AmbientColor").c_str() );
+      Location.Lights[i].LightDiffuse = glGetUniformLocation( ShaderProgram, string("Lights[" + to_string( i ) + "].DiffuseColor").c_str() );
+      Location.Lights[i].LightSpecular = glGetUniformLocation( ShaderProgram, string("Lights[" + to_string( i ) + "].SpecularColor").c_str() );
+      Location.Lights[i].SpotlightDirection = glGetUniformLocation( ShaderProgram, string("Lights[" + to_string( i ) + "].SpotlightDirection").c_str() );
+      Location.Lights[i].SpotlightExponent = glGetUniformLocation( ShaderProgram, string("Lights[" + to_string( i ) + "].SpotlightExponent").c_str() );
+      Location.Lights[i].SpotlightCutoffAngle = glGetUniformLocation( ShaderProgram, string("Lights[" + to_string( i ) + "].SpotlightCutoffAngle").c_str() );
+      Location.Lights[i].LightAttenuationFactors = glGetUniformLocation( ShaderProgram, string("Lights[" + to_string( i ) + "].AttenuationFactors").c_str() );
+   }
 }
 
 
@@ -100,7 +118,7 @@ void ShaderGL::setShader(const char* vertex_shader_path, const char* fragment_sh
 //------------------------------------------------------------------
 
 LightGL::LightGL() :
-   TurnLightOn( true ), TotalLightNum( 0 ), GlobalAmbientColor( 0.2f, 0.2f, 0.2f, 1.0f )
+   TurnLightOn( false ), GlobalAmbientColor( 0.2f, 0.2f, 0.2f, 1.0f ), TotalLightNum( 0 )
 {
 }
 
@@ -109,9 +127,9 @@ bool LightGL::isLightOn() const
    return TurnLightOn;
 }
 
-void LightGL::turnLightOn(const bool& light_on)
+void LightGL::toggleLightSwitch()
 {
-   TurnLightOn = light_on;
+   TurnLightOn = !TurnLightOn;
 }
 
 void LightGL::addLight(
@@ -132,7 +150,7 @@ void LightGL::addLight(
    SpecularColors.emplace_back( specular_color );
 
    SpotlightDirections.emplace_back( spotlight_direction );
-   SpotlightExponent.emplace_back( spotlight_exponent );
+   SpotlightExponents.emplace_back( spotlight_exponent );
    SpotlightCutoffAngles.emplace_back( spotlight_cutoff_angle_in_degree );
 
    AttenuationFactors.emplace_back( attenuation_factor );
@@ -174,7 +192,7 @@ void LightGL::setSpotlightDirection(const vec3& spotlight_direction, const uint&
 void LightGL::setSpotlightExponent(const float& spotlight_exponent, const uint& light_index)
 {
    if (light_index >= TotalLightNum) return;
-   SpotlightExponent[light_index] = spotlight_exponent;
+   SpotlightExponents[light_index] = spotlight_exponent;
 }
 
 void LightGL::setSpotlightCutoffAngle(const float& spotlight_cutoff_angle_in_degree, const uint& light_index)
@@ -205,6 +223,25 @@ void LightGL::deactivateLight(const uint& light_index)
 {
    if (light_index >= TotalLightNum) return;
    IsActivated[light_index] = false;
+}
+
+void LightGL::transferUniformsToShader(ShaderGL& shader)
+{
+   glUniform1i( shader.Location.UseLight, TurnLightOn ? 1 : 0 );
+   glUniform1i( shader.Location.LightNum, TotalLightNum );
+   glUniform4fv( shader.Location.GlobalAmbient, 1, &GlobalAmbientColor[0] );
+
+   for (uint i = 0; i < TotalLightNum; ++i) {
+      glUniform1i( shader.Location.Lights[i].LightSwitch, IsActivated[0] ? 1 : 0 );
+      glUniform4fv( shader.Location.Lights[i].LightPosition, 1, &Positions[i][0] );
+      glUniform4fv( shader.Location.Lights[i].LightAmbient, 1, &AmbientColors[i][0] );
+      glUniform4fv( shader.Location.Lights[i].LightDiffuse, 1, &DiffuseColors[i][0] );
+      glUniform4fv( shader.Location.Lights[i].LightSpecular, 1, &SpecularColors[i][0] );
+      glUniform3fv( shader.Location.Lights[i].SpotlightDirection, 1, &SpotlightDirections[i][0] ); 
+      glUniform1f( shader.Location.Lights[i].SpotlightExponent, SpotlightExponents[i] );
+      glUniform1f( shader.Location.Lights[i].SpotlightCutoffAngle, SpotlightCutoffAngles[i] );
+      glUniform3fv( shader.Location.Lights[i].LightAttenuationFactors, 1, &AttenuationFactors[i][0] );
+   }
 }
 
 
@@ -348,7 +385,8 @@ void CameraGL::updateWindowSize(const int& width, const int& height)
 ObjectGL::ObjectGL() : 
    ObjVAO( 0 ), ObjVBO( 0 ), DrawMode( 0 ), TextureID( 0 ), VerticesCount( 0 ),
    EmissionColor( 0.0f, 0.0f, 0.0f, 1.0f ), AmbientReflectionColor( 0.2f, 0.2f, 0.2f, 1.0f ),
-   DiffuseReflectionColor( 0.8f, 0.8f, 0.8f, 1.0f ), SpecularReflectionColor( 0.0f, 0.0f, 0.0f, 1.0f )
+   DiffuseReflectionColor( 0.8f, 0.8f, 0.8f, 1.0f ), SpecularReflectionColor( 0.0f, 0.0f, 0.0f, 1.0f ),
+   SpecularReflectionExponent( 0.0f )
 {
 }
 
@@ -370,6 +408,11 @@ void ObjectGL::setDiffuseReflectionColor(const vec4& diffuse_reflection_color)
 void ObjectGL::setSpecularReflectionColor(const vec4& specular_reflection_color)
 {
    SpecularReflectionColor = specular_reflection_color;
+}
+
+void ObjectGL::setSpecularReflectionExponent(const float& specular_reflection_exponent)
+{
+   SpecularReflectionExponent = specular_reflection_exponent;
 }
 
 void ObjectGL::prepareTexture2DFromMat(const Mat& texture) const
@@ -461,13 +504,11 @@ void ObjectGL::prepareNormal(const int& n_bytes_per_vertex) const
 
 void ObjectGL::prepareVertexBuffer(const int& n_bytes_per_vertex)
 {
-   // initialize vertex buffer object
    glGenBuffers( 1, &ObjVBO );
    glBindBuffer( GL_ARRAY_BUFFER, ObjVBO );
    glBufferData( GL_ARRAY_BUFFER, sizeof(GLfloat) * DataBuffer.size(), DataBuffer.data(), GL_STATIC_DRAW );
    glBindBuffer( GL_ARRAY_BUFFER, 0 );
 
-   // initialize vertex array object
    glGenVertexArrays( 1, &ObjVAO );
    glBindVertexArray( ObjVAO );
    glBindBuffer( GL_ARRAY_BUFFER, ObjVBO );
@@ -609,26 +650,15 @@ void ObjectGL::setObject(
    prepareTexture( n_bytes_per_vertex, texture, true );
 }
 
-void ObjectGL::transferUniformsToShader(ShaderGL& shader, CameraGL& camera, const mat4& to_world)
+void ObjectGL::transferUniformsToShader(ShaderGL& shader)
 {
-   const mat4 model_view_projection = camera.ProjectionMatrix * camera.ViewMatrix * to_world;
-   glUniformMatrix4fv( shader.MVPLocation, 1, GL_FALSE, &model_view_projection[0][0] );
-   glUniformMatrix4fv( shader.WorldLocation, 1, GL_FALSE, &to_world[0][0]);
-   glUniformMatrix4fv( shader.ViewLocation, 1, GL_FALSE, &camera.ViewMatrix[0][0]);
-   glUniformMatrix4fv( shader.ProjectionLocation, 1, GL_FALSE, &camera.ProjectionMatrix[0][0]);
+   glUniform4fv( shader.Location.MaterialEmission, 1, &EmissionColor[0] );
+   glUniform4fv( shader.Location.MaterialAmbient, 1, &AmbientReflectionColor[0] );
+   glUniform4fv( shader.Location.MaterialDiffuse, 1, &DiffuseReflectionColor[0] );
+   glUniform4fv( shader.Location.MaterialSpecular, 1, &SpecularReflectionColor[0] );
+   glUniform1f( shader.Location.MaterialSpecularExponent, SpecularReflectionExponent );
 
-   //vec3 light_color(0.0f), light_position(0.0f);
-   //if (LightManager.TurnLightOn) {
-   //   light_color = LightManager.Colors[LightManager.ActivatedIndex];
-   //   light_position = LightManager.Positions[LightManager.ActivatedIndex];
-   //}
-   //glUniform3fv( shader.LightLocation, 1, &light_position[0] );
-   //glUniform3fv( shader.LightColorLocation, 1, &light_color[0] );
-   //glUniform1i( shader.LightSwitchLocation, LightManager.TurnLightOn ? 1 : 0 );
-   
-   glBindVertexArray( ObjVAO );
-   glUniform1i( shader.TextureLocation, TextureID );
-   //glUniform3fv( shader.ColorLocation, 1, value_ptr( Colors ) );
+   glUniform1i( shader.Location.Texture, TextureID );
 }
 
 
@@ -664,7 +694,7 @@ void RendererGL::printOpenGLInformation() const
    cout << "****************************************************************" << endl << endl;
 }
 
-void RendererGL::initializeOpenGL(const int& width, const int& height)
+void RendererGL::initialize()
 {
    if (!glfwInit()) {
       cout << "Cannot Initialize OpenGL..." << endl;
@@ -675,23 +705,18 @@ void RendererGL::initializeOpenGL(const int& width, const int& height)
    glfwWindowHint( GLFW_DOUBLEBUFFER, GLFW_TRUE );
    glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
 
+   const int width = 1920;
+   const int height = 1080;
    Window = glfwCreateWindow( width, height, "Main Camera", nullptr, nullptr );
    glfwMakeContextCurrent( Window );
    glewInit();
+   
+   registerCallbacks();
    
    glEnable( GL_DEPTH_TEST );
    glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
 
    MainCamera.updateWindowSize( width, height );
-}
-
-void RendererGL::initialize()
-{
-   const int width = 1920;
-   const int height = 1080;
-   initializeOpenGL( width, height );
-   registerCallbacks();
-
    ObjectShader.setShader(
       "Shaders/VertexShaderForObject.glsl",
       "Shaders/FragmentShaderForObject.glsl"
@@ -749,14 +774,8 @@ void RendererGL::keyboard(GLFWwindow* window, int key, int scancode, int action,
          MainCamera.resetCamera();
          break;
       case GLFW_KEY_L:
-         LightManager.TurnLightOn = !LightManager.TurnLightOn;
-         LightManager.ActivatedIndex = 0;
-         cout << "Light Turned " << (LightManager.TurnLightOn ? "On!" : "Off!") << endl;
-         break;
-      case GLFW_KEY_ENTER:
-         LightManager.ActivatedIndex++;
-         if (LightManager.ActivatedIndex == LightManager.Colors.size()) LightManager.ActivatedIndex = 0;
-         cout << "Light-" << LightManager.ActivatedIndex << " Activated!" << endl;
+         Lights.toggleLightSwitch();
+         cout << "Light Turned " << (Lights.isLightOn() ? "On!" : "Off!") << endl;
          break;
       case GLFW_KEY_SPACE:
          DrawMovingObject = !DrawMovingObject;
@@ -850,21 +869,21 @@ void RendererGL::registerCallbacks() const
    glfwSetFramebufferSizeCallback( Window, reshapeWrapper );
 }
 
-void RendererGL::setLight()
+void RendererGL::setLights()
 {  
-   vec4 light_position(0.0f, 10.0f, -5.0f, 1.0f);
+   vec4 light_position(-10.0f, 0.0f, -10.0f, 1.0f);
    vec4 ambient_color(0.3f, 0.3f, 0.3f, 1.0f);
    vec4 diffuse_color(0.7f, 0.7f, 0.7f, 1.0f);
    vec4 specular_color(0.9f, 0.9f, 0.9f, 1.0f);
    Lights.addLight( light_position, ambient_color, diffuse_color, specular_color );
 
-   light_position = vec4(-20.0f, 50.0f, -20.0f, 1.0f);
+   light_position = vec4(0.0f, 30.0f, 10.0f, 1.0f);
    ambient_color = vec4(0.2f, 0.2f, 0.2f, 1.0f);
-   diffuse_color = vec4(0.82f, 0.82f, 0.82f, 1.0f);
-   specular_color = vec4(0.82f, 0.82f, 0.82f, 1.0f);
-   vec3 spotlight_direction(0.0f, -1.0f, 0.0f);
-   float spotlight_exponent = 27.0f;
-   float spotlight_cutoff_angle_in_degree = 20.0f;
+   diffuse_color = vec4(0.9f, 0.5f, 0.1f, 1.0f);
+   specular_color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+   vec3 spotlight_direction(0.0f, -1.0f, 1.5f);
+   float spotlight_exponent = 128;
+   float spotlight_cutoff_angle_in_degree = 7.0f;
    Lights.addLight( 
       light_position, 
       ambient_color, 
@@ -893,13 +912,13 @@ void RendererGL::setObject()
    square_vertices.emplace_back( 0.0f, 0.0f, 0.0f );
 
    vector<vec3> square_normals;
-   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
-   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
-   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
    
-   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
-   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
-   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
    
    Object.setObject( GL_TRIANGLES, square_vertices, square_normals );
 
@@ -913,28 +932,22 @@ void RendererGL::drawObject(const float& scale_factor)
 
    const mat4 to_origin = translate( mat4(1.0f), vec3(-0.5f, -0.5f, 0.0f) );
    const mat4 scale_matrix = scale( mat4(1.0f), vec3(scale_factor, scale_factor, scale_factor) );
-   mat4 to_world = scale_matrix * to_origin;
+   const mat4 move_back = translate( mat4(1.0f), vec3(0.0f, 0.0f, 50.0f) );
+   mat4 to_world = move_back * scale_matrix * to_origin;
    if (DrawMovingObject) {
       to_world = rotate( mat4(1.0f), static_cast<float>(ObjectRotationAngle), vec3(0.0f, 0.0f, 1.0f) ) * to_world;
    }
 
-   Object.transferUniformsToShader( ObjectShader, MainCamera, to_world );
-
    const mat4 model_view_projection = MainCamera.ProjectionMatrix * MainCamera.ViewMatrix * to_world;
-   glUniformMatrix4fv( ObjectShader.MVPLocation, 1, GL_FALSE, &model_view_projection[0][0] );
+   glUniformMatrix4fv( ObjectShader.Location.World, 1, GL_FALSE, &to_world[0][0] );
+   glUniformMatrix4fv( ObjectShader.Location.View, 1, GL_FALSE, &MainCamera.ViewMatrix[0][0] );
+   glUniformMatrix4fv( ObjectShader.Location.Projection, 1, GL_FALSE, &MainCamera.ProjectionMatrix[0][0] );
+   glUniformMatrix4fv( ObjectShader.Location.ModelViewProjection, 1, GL_FALSE, &model_view_projection[0][0] );
 
-   vec3 light_color(0.0f), light_position(0.0f);
-   if (LightManager.TurnLightOn) {
-      light_color = LightManager.Colors[LightManager.ActivatedIndex];
-      light_position = LightManager.Positions[LightManager.ActivatedIndex];
-   }
-   glUniform3fv( ObjectShader.LightLocation, 1, &light_position[0] );
-   glUniform3fv( ObjectShader.LightColorLocation, 1, &light_color[0] );
-   glUniform1i( ObjectShader.LightSwitchLocation, LightManager.TurnLightOn ? 1 : 0 );
+   Object.transferUniformsToShader( ObjectShader );
+   Lights.transferUniformsToShader( ObjectShader );
    
    glBindVertexArray( Object.ObjVAO );
-   glUniform1i( ObjectShader.TextureLocation, Object.TextureID );
-   //glUniform3fv( ObjectShader.ColorLocation, 1, value_ptr( Object.Colors ) );
    glDrawArrays( Object.DrawMode, 0, Object.VerticesCount );
 }
 
@@ -942,7 +955,7 @@ void RendererGL::render()
 {
    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-   drawObject( 3.0f );
+   drawObject( 20.0f );
 
    glBindVertexArray( 0 );
    glUseProgram( 0 );
@@ -960,8 +973,9 @@ void RendererGL::play()
 {
    if (glfwWindowShouldClose( Window )) initialize();
 
-   setLight();
+   setLights();
    setObject();
+   ObjectShader.setUniformLocations( Lights.TotalLightNum );
 
    const double update_time = 0.1;
    double last = glfwGetTime(), time_delta = 0.0;
