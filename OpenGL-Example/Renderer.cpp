@@ -252,7 +252,7 @@ void LightGL::transferUniformsToShader(ShaderGL& shader)
 //------------------------------------------------------------------
 
 CameraGL::CameraGL() : 
-   CameraGL(vec3(0.0f, 0.0f, -10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f))
+   CameraGL(vec3(0.0f, 0.0f, 10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f))
 {   
 }
 
@@ -871,17 +871,17 @@ void RendererGL::registerCallbacks() const
 
 void RendererGL::setLights()
 {  
-   vec4 light_position(-10.0f, 0.0f, -10.0f, 1.0f);
+   vec4 light_position(-10.0f, 10.0f, 10.0f, 1.0f);
    vec4 ambient_color(0.3f, 0.3f, 0.3f, 1.0f);
    vec4 diffuse_color(0.7f, 0.7f, 0.7f, 1.0f);
    vec4 specular_color(0.9f, 0.9f, 0.9f, 1.0f);
    Lights.addLight( light_position, ambient_color, diffuse_color, specular_color );
 
-   light_position = vec4(0.0f, 30.0f, 10.0f, 1.0f);
+   light_position = vec4(0.0f, 35.0f, 10.0f, 1.0f);
    ambient_color = vec4(0.2f, 0.2f, 0.2f, 1.0f);
    diffuse_color = vec4(0.9f, 0.5f, 0.1f, 1.0f);
    specular_color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-   vec3 spotlight_direction(0.0f, -1.0f, 1.5f);
+   vec3 spotlight_direction(0.0f, -1.0f, -1.5f);
    float spotlight_exponent = 128;
    float spotlight_cutoff_angle_in_degree = 7.0f;
    Lights.addLight( 
@@ -912,13 +912,13 @@ void RendererGL::setObject()
    square_vertices.emplace_back( 0.0f, 0.0f, 0.0f );
 
    vector<vec3> square_normals;
-   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
-   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
-   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
    
-   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
-   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
-   square_normals.emplace_back( 0.0f, 0.0f, -1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
+   square_normals.emplace_back( 0.0f, 0.0f, 1.0f );
    
    Object.setObject( GL_TRIANGLES, square_vertices, square_normals );
 
@@ -932,7 +932,7 @@ void RendererGL::drawObject(const float& scale_factor)
 
    const mat4 to_origin = translate( mat4(1.0f), vec3(-0.5f, -0.5f, 0.0f) );
    const mat4 scale_matrix = scale( mat4(1.0f), vec3(scale_factor, scale_factor, scale_factor) );
-   const mat4 move_back = translate( mat4(1.0f), vec3(0.0f, 0.0f, 50.0f) );
+   const mat4 move_back = translate( mat4(1.0f), vec3(0.0f, 0.0f, -50.0f) );
    mat4 to_world = move_back * scale_matrix * to_origin;
    if (DrawMovingObject) {
       to_world = rotate( mat4(1.0f), static_cast<float>(ObjectRotationAngle), vec3(0.0f, 0.0f, 1.0f) ) * to_world;
