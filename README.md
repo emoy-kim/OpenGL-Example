@@ -1,6 +1,6 @@
 # OpenGL-Example
 
-![lighting](https://user-images.githubusercontent.com/17864157/61874690-fc1d3700-af23-11e9-956f-24b0edf71618.png)
+![lighting](https://user-images.githubusercontent.com/17864157/61940947-6b049980-afd1-11e9-9b4d-482d78d7d0eb.PNG)
 
 
   
