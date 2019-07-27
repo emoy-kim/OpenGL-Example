@@ -147,6 +147,8 @@
     <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="OpenCVLinker.h" />
+    <ClInclude Include="OpenGLLinker.h" />
     <ClInclude Include="Renderer.h" />
   </ItemGroup>
   <ItemGroup>
