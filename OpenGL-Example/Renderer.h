@@ -139,12 +139,13 @@ public:
    void updateCamera();
    void pitch(const int& angle);
    void yaw(const int& angle);
-   void moveForward();
-   void moveBackward();
-   void moveLeft();
-   void moveRight();
-   void moveUp();
-   void moveDown();
+   void rotateAroundWorldY(const int& angle);
+   void moveForward(const int& delta = 1);
+   void moveBackward(const int& delta = 1);
+   void moveLeft(const int& delta = 1);
+   void moveRight(const int& delta = 1);
+   void moveUp(const int& delta = 1);
+   void moveDown(const int& delta = 1);
    void zoomIn();
    void zoomOut();
    void resetCamera();
@@ -245,7 +246,7 @@ class RendererGL
    static RendererGL* Renderer;
    GLFWwindow* Window;
 
-   vec2 ClickedPoint;
+   ivec2 ClickedPoint;
 
    CameraGL MainCamera;
    ShaderGL ObjectShader;
