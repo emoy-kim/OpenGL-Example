@@ -38,12 +38,12 @@ public:
    {
       GLint World, View, Projection, ModelViewProjection;
       GLint MaterialEmission, MaterialAmbient, MaterialDiffuse, MaterialSpecular, MaterialSpecularExponent;
-      GLint Texture;
+      GLint TextureUnit, Texture;
       GLint UseLight, LightNum, GlobalAmbient;
       vector<LightLocationSet> Lights;
       LocationSet() : World( 0 ), View( 0 ), Projection( 0 ), ModelViewProjection( 0 ), MaterialEmission( 0 ),
       MaterialAmbient( 0 ), MaterialDiffuse( 0 ), MaterialSpecular( 0 ), MaterialSpecularExponent( 0 ), 
-      Texture( 0 ), UseLight( 0 ), LightNum( 0 ), GlobalAmbient( 0 ) {}
+      TextureUnit( 0 ), Texture( 0 ), UseLight( 0 ), LightNum( 0 ), GlobalAmbient( 0 ) {}
    };
    
    LocationSet Location;
@@ -157,21 +157,13 @@ class ObjectGL
    vector<GLfloat> DataBuffer; // 3 for vertex, 3 for normal, and 2 for texture
 
    void prepareTexture2DFromMat(const Mat& texture) const;
-   void prepareTexture(
-      const int& n_bytes_per_vertex, 
-      const Mat& texture, 
-      const bool& normals_exist
-   );
+   void prepareTexture(const Mat& texture, const bool& normals_exist);
    
    void prepareTexture2DFromFile(const string& file_name) const;
-   void prepareTexture(
-      const int& n_bytes_per_vertex, 
-      const string& texture_file_name, 
-      const bool& normals_exist
-   );
+   void prepareTexture(const string& texture_file_name, const bool& normals_exist);
 
    void prepareVertexBuffer(const int& n_bytes_per_vertex);
-   void prepareNormal(const int& n_bytes_per_vertex) const;
+   void prepareNormal() const;
    GLvoid* bufferOffset(uint offset) const { return reinterpret_cast<GLvoid *>(offset); }
 
 public:
