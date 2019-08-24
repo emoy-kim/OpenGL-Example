@@ -164,7 +164,6 @@ class ObjectGL
 
    void prepareVertexBuffer(const int& n_bytes_per_vertex);
    void prepareNormal() const;
-   GLvoid* bufferOffset(uint offset) const { return reinterpret_cast<GLvoid *>(offset); }
 
 public:
    enum LayoutLocation { VertexLoc=0, NormalLoc, TextureLoc };

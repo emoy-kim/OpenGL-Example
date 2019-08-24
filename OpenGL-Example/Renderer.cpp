@@ -429,7 +429,7 @@ void ObjectGL::prepareTexture2DFromMat(const Mat& texture) const
    const int width = texture.cols;
    const int height = texture.rows;
    glTextureStorage2D( TextureID, 1, GL_RGBA8, width, height );
-   glTextureSubImage2D( TextureID, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, texture.data );
+   glTextureSubImage2D( TextureID, 0, 0, 0, width, height, GL_BGR, GL_UNSIGNED_BYTE, texture.data );
 }
 
 void ObjectGL::prepareTexture(const Mat& texture, const bool& normals_exist)
