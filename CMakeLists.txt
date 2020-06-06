@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(
 	SOURCE_FILES 
-		source/main.cpp
+		main.cpp
 		source/Light.cpp
 		source/Camera.cpp
 		source/Object.cpp
