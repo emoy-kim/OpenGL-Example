@@ -8,16 +8,17 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(
 	SOURCE_FILES 
-		main.cpp
-		Light.cpp
-		Camera.cpp
-		Object.cpp
-		Shader.cpp
-		Renderer.cpp
+		source/main.cpp
+		source/Light.cpp
+		source/Camera.cpp
+		source/Object.cpp
+		source/Shader.cpp
+		source/Renderer.cpp
 )
 
-configure_file(ProjectPath.h.in ${PROJECT_BINARY_DIR}/ProjectPath.h @ONLY)
+configure_file(include/ProjectPath.h.in ${PROJECT_BINARY_DIR}/ProjectPath.h @ONLY)
 
+include_directories("include")
 if(MSVC)
    include(cmake/add-libraries-windows.cmake)
 else()
