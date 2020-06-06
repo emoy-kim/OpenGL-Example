@@ -131,6 +131,7 @@ void ShaderGL::setUniformLocations(int light_num)
    Location.MaterialSpecularExponent = glGetUniformLocation( ShaderProgram, "Material.SpecularExponent" );
 
    Location.Texture[0] = glGetUniformLocation( ShaderProgram, "BaseTexture" );
+   Location.UseTexture = glGetUniformLocation( ShaderProgram, "UseTexture" );
 
    Location.UseLight = glGetUniformLocation( ShaderProgram, "UseLight" );
    Location.LightNum = glGetUniformLocation( ShaderProgram, "LightNum" );
@@ -160,7 +161,7 @@ void ShaderGL::addUniformLocationToComputeShader(const std::string& name, int sh
    CustomLocations[name] = glGetUniformLocation( ComputeShaderPrograms[shader_index], name.c_str() );
 }
 
-void ShaderGL::transferBasicTransformationUniforms(const glm::mat4& to_world, const CameraGL* camera) const
+void ShaderGL::transferBasicTransformationUniforms(const glm::mat4& to_world, const CameraGL* camera, bool use_texture) const
 {
    const glm::mat4 view = camera->getViewMatrix();
    const glm::mat4 projection = camera->getProjectionMatrix();
@@ -173,4 +174,5 @@ void ShaderGL::transferBasicTransformationUniforms(const glm::mat4& to_world, co
    for (const auto& texture : Location.Texture) {
       glUniform1i( texture.second, texture.first );
    }
+   glUniform1i( Location.UseTexture, use_texture ? 1 : 0 );
 }

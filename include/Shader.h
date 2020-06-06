@@ -22,12 +22,12 @@ public:
       GLint World, View, Projection, ModelViewProjection;
       GLint MaterialEmission, MaterialAmbient, MaterialDiffuse, MaterialSpecular, MaterialSpecularExponent;
       std::map<GLint, GLint> Texture; // <binding point, texture id>
-      GLint UseLight, LightNum, GlobalAmbient;
+      GLint UseTexture, UseLight, LightNum, GlobalAmbient;
       std::vector<LightLocationSet> Lights;
 
       LocationSet() : World( 0 ), View( 0 ), Projection( 0 ), ModelViewProjection( 0 ), MaterialEmission( 0 ),
       MaterialAmbient( 0 ), MaterialDiffuse( 0 ), MaterialSpecular( 0 ), MaterialSpecularExponent( 0 ),
-      UseLight( 0 ), LightNum( 0 ), GlobalAmbient( 0 ) {}
+      UseTexture( 0 ), UseLight( 0 ), LightNum( 0 ), GlobalAmbient( 0 ) {}
    };
 
    ShaderGL();
@@ -44,7 +44,7 @@ public:
    void setUniformLocations(int light_num);
    void addUniformLocation(const std::string& name);
    void addUniformLocationToComputeShader(const std::string& name, int shader_index);
-   void transferBasicTransformationUniforms(const glm::mat4& to_world, const CameraGL* camera) const;
+   void transferBasicTransformationUniforms(const glm::mat4& to_world, const CameraGL* camera, bool use_texture = false) const;
    [[nodiscard]] GLuint getShaderProgram() const { return ShaderProgram; }
    [[nodiscard]] GLint getLocation(const std::string& name) const { return CustomLocations.find( name )->second; }
    [[nodiscard]] GLint getMaterialEmissionLocation() const { return Location.MaterialEmission; }
