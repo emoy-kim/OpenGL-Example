@@ -3,15 +3,6 @@
 ![lighting](https://user-images.githubusercontent.com/17864157/61940947-6b049980-afd1-11e9-9b4d-482d78d7d0eb.PNG)
 
 
-  
-## Test Environment
-  * Windows 10
-  * Visual Studio 2017
-  * Surface Book 2
-  
-## Library Dependencies
-  * OpenCV
-  * OpenGL
 
 ## Keyboard Commands
   * **space bar**: object moving
