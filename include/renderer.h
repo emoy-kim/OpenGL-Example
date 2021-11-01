@@ -43,22 +43,31 @@ private:
    void registerCallbacks() const;
    void initialize();
 
-   void printOpenGLInformation() const;
+   static void printOpenGLInformation();
 
-   void error(int error, const char* description) const;
-   void cleanup(GLFWwindow* window);
+   static void error(int e, const char* description);
+   static void cleanup(GLFWwindow* window);
    void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods);
    void cursor(GLFWwindow* window, double xpos, double ypos);
    void mouse(GLFWwindow* window, int button, int action, int mods);
    void mousewheel(GLFWwindow* window, double xoffset, double yoffset) const;
    void reshape(GLFWwindow* window, int width, int height) const;
-   static void errorWrapper(int error, const char* description);
-   static void cleanupWrapper(GLFWwindow* window);
-   static void keyboardWrapper(GLFWwindow* window, int key, int scancode, int action, int mods);
-   static void cursorWrapper(GLFWwindow* window, double xpos, double ypos);
-   static void mouseWrapper(GLFWwindow* window, int button, int action, int mods);
-   static void mousewheelWrapper(GLFWwindow* window, double xoffset, double yoffset);
-   static void reshapeWrapper(GLFWwindow* window, int width, int height);
+   static void errorWrapper(int error, const char* description) { RendererGL::error( error, description ); }
+   static void cleanupWrapper(GLFWwindow* window) { RendererGL::cleanup( window ); }
+   static void keyboardWrapper(GLFWwindow* window, int key, int scancode, int action, int mods)
+   {
+      Renderer->keyboard( window, key, scancode, action, mods );
+   }
+   static void cursorWrapper(GLFWwindow* window, double xpos, double ypos) { Renderer->cursor( window, xpos, ypos ); }
+   static void mouseWrapper(GLFWwindow* window, int button, int action, int mods)
+   {
+      Renderer->mouse( window, button, action, mods );
+   }
+   static void mousewheelWrapper(GLFWwindow* window, double xoffset, double yoffset)
+   {
+      Renderer->mousewheel( window, xoffset, yoffset );
+   }
+   static void reshapeWrapper(GLFWwindow* window, int width, int height) { Renderer->reshape( window, width, height ); }
 
    void setLights() const;
    void setObject() const;

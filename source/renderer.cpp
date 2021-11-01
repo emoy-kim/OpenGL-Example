@@ -12,7 +12,7 @@ RendererGL::RendererGL() :
    printOpenGLInformation();
 }
 
-void RendererGL::printOpenGLInformation() const
+void RendererGL::printOpenGLInformation()
 {
    std::cout << "****************************************************************\n";
    std::cout << " - GLFW version supported: " << glfwGetVersionString() << "\n";
@@ -55,14 +55,10 @@ void RendererGL::initialize()
    );
 }
 
-void RendererGL::error(int error, const char* description) const
+void RendererGL::error(int e, const char* description)
 {
+   std::ignore = e;
    puts( description );
-}
-
-void RendererGL::errorWrapper(int error, const char* description)
-{
-   Renderer->error( error, description );
 }
 
 void RendererGL::cleanup(GLFWwindow* window)
@@ -70,13 +66,10 @@ void RendererGL::cleanup(GLFWwindow* window)
    glfwSetWindowShouldClose( window, GLFW_TRUE );
 }
 
-void RendererGL::cleanupWrapper(GLFWwindow* window)
-{
-   Renderer->cleanup( window );
-}
-
 void RendererGL::keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+   std::ignore = scancode;
+   std::ignore = mods;
    if (action != GLFW_PRESS) return;
 
    switch (key) {
@@ -121,11 +114,6 @@ void RendererGL::keyboard(GLFWwindow* window, int key, int scancode, int action,
    }
 }
 
-void RendererGL::keyboardWrapper(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-   Renderer->keyboard( window, key, scancode, action, mods );
-}
-
 void RendererGL::cursor(GLFWwindow* window, double xpos, double ypos)
 {
    if (MainCamera->getMovingState()) {
@@ -145,13 +133,9 @@ void RendererGL::cursor(GLFWwindow* window, double xpos, double ypos)
    }
 }
 
-void RendererGL::cursorWrapper(GLFWwindow* window, double xpos, double ypos)
-{
-   Renderer->cursor( window, xpos, ypos );
-}
-
 void RendererGL::mouse(GLFWwindow* window, int button, int action, int mods)
 {
+   std::ignore = mods;
    if (button == GLFW_MOUSE_BUTTON_LEFT) {
       const bool moving_state = action == GLFW_PRESS;
       if (moving_state) {
@@ -164,31 +148,19 @@ void RendererGL::mouse(GLFWwindow* window, int button, int action, int mods)
    }
 }
 
-void RendererGL::mouseWrapper(GLFWwindow* window, int button, int action, int mods)
-{
-   Renderer->mouse( window, button, action, mods );
-}
-
 void RendererGL::mousewheel(GLFWwindow* window, double xoffset, double yoffset) const
 {
+   std::ignore = window;
+   std::ignore = xoffset;
    if (yoffset >= 0.0) MainCamera->zoomIn();
    else MainCamera->zoomOut();
 }
 
-void RendererGL::mousewheelWrapper(GLFWwindow* window, double xoffset, double yoffset)
-{
-   Renderer->mousewheel( window, xoffset, yoffset );
-}
-
 void RendererGL::reshape(GLFWwindow* window, int width, int height) const
 {
+   std::ignore = window;
    MainCamera->updateWindowSize( width, height );
    glViewport( 0, 0, width, height );
-}
-
-void RendererGL::reshapeWrapper(GLFWwindow* window, int width, int height)
-{
-   Renderer->reshape( window, width, height );
 }
 
 void RendererGL::registerCallbacks() const
