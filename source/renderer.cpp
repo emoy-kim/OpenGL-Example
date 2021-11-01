@@ -14,12 +14,12 @@ RendererGL::RendererGL() :
 
 void RendererGL::printOpenGLInformation()
 {
-   std::cout << "****************************************************************\n";
+   std::cout << "====================== [ Renderer Information ] ================================================\n";
    std::cout << " - GLFW version supported: " << glfwGetVersionString() << "\n";
    std::cout << " - OpenGL renderer: " << glGetString( GL_RENDERER ) << "\n";
    std::cout << " - OpenGL version supported: " << glGetString( GL_VERSION ) << "\n";
    std::cout << " - OpenGL shader version supported: " << glGetString( GL_SHADING_LANGUAGE_VERSION ) << "\n";
-   std::cout << "****************************************************************\n\n";
+   std::cout << "================================================================================================\n";
 }
 
 void RendererGL::initialize()

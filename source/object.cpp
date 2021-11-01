@@ -342,7 +342,7 @@ void ObjectGL::updateDataBuffer(const std::vector<glm::vec3>& vertices, const st
       DataBuffer.push_back( normals[i].z );
       VerticesCount++;
    }
-   glNamedBufferSubData( VBO, 0, sizeof( GLfloat ) * DataBuffer.size(), DataBuffer.data() );
+   glNamedBufferSubData( VBO, 0, static_cast<GLsizeiptr>(sizeof( GLfloat ) * DataBuffer.size()), DataBuffer.data() );
 }
 
 void ObjectGL::updateDataBuffer(
@@ -366,7 +366,7 @@ void ObjectGL::updateDataBuffer(
       DataBuffer.push_back( textures[i].y );
       VerticesCount++;
    }
-   glNamedBufferSubData( VBO, 0, sizeof( GLfloat ) * DataBuffer.size(), DataBuffer.data() );
+   glNamedBufferSubData( VBO, 0, static_cast<GLsizeiptr>(sizeof( GLfloat ) * DataBuffer.size()), DataBuffer.data() );
 }
 
 void ObjectGL::replaceVertices(
@@ -387,7 +387,7 @@ void ObjectGL::replaceVertices(
       DataBuffer[i * step + 2] = vertices[i].z;
       VerticesCount++;
    }
-   glNamedBufferSubData( VBO, 0, sizeof( GLfloat ) * VerticesCount * step, DataBuffer.data() );
+   glNamedBufferSubData( VBO, 0, static_cast<GLsizeiptr>(sizeof( GLfloat ) * VerticesCount * step), DataBuffer.data() );
 }
 
 void ObjectGL::replaceVertices(
@@ -408,5 +408,5 @@ void ObjectGL::replaceVertices(
       DataBuffer[j * step + 2] = vertices[i + 2];
       VerticesCount++;
    }
-   glNamedBufferSubData( VBO, 0, sizeof( GLfloat ) * VerticesCount * step, DataBuffer.data() );
+   glNamedBufferSubData( VBO, 0, static_cast<GLsizeiptr>(sizeof( GLfloat ) * VerticesCount * step), DataBuffer.data() );
 }
