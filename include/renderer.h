@@ -9,9 +9,8 @@
 
 #pragma once
 
-#include "_Common.h"
-#include "Light.h"
-#include "Object.h"
+#include "light.h"
+#include "object.h"
 
 class RendererGL
 {
@@ -23,7 +22,7 @@ public:
 
 
    RendererGL();
-   ~RendererGL();
+   ~RendererGL() = default;
 
    void play();
 

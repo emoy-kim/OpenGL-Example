@@ -1,4 +1,4 @@
-#include "Object.h"
+#include "object.h"
 
 ObjectGL::ObjectGL() :
    ImageBuffer( nullptr ), VAO( 0 ), VBO( 0 ), DrawMode( 0 ), VerticesCount( 0 ),
