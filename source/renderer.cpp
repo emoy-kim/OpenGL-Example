@@ -44,7 +44,7 @@ void RendererGL::initialize()
    registerCallbacks();
    
    glEnable( GL_DEPTH_TEST );
-   glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
+   glClearColor( 0.35f, 0.0f, 0.53f, 1.0f );
 
    MainCamera->updateWindowSize( FrameWidth, FrameHeight );
 
@@ -204,9 +204,13 @@ void RendererGL::setObject() const
 {
    if (Object->getVAO() != 0) return;
 
-   Object->setSquareObject( GL_TRIANGLES );
+   Object->setSquareObject(
+      GL_TRIANGLES,
+      std::string(CMAKE_SOURCE_DIR) + "/emoy.png",
+      false
+   );
 
-   const glm::vec4 diffuse_color = { 0.5f, 0.7f, 0.2f, 1.0f };
+   const glm::vec4 diffuse_color = { 1.0f, 1.0f, 1.0f, 1.0f };
    Object->setDiffuseReflectionColor( diffuse_color );
 }
 
@@ -218,18 +222,19 @@ void RendererGL::drawObject(const float& scale_factor) const
    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
    glUseProgram( ObjectShader->getShaderProgram() );
 
-   const glm::mat4 to_origin = translate( glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, 0.0f) );
-   const glm::mat4 scale_matrix = scale( glm::mat4(1.0f), glm::vec3(scale_factor, scale_factor, scale_factor) );
-   const glm::mat4 move_back = translate( glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -50.0f) );
+   const glm::mat4 to_origin = glm::translate( glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, 0.0f) );
+   const glm::mat4 scale_matrix = glm::scale( glm::mat4(1.0f), glm::vec3(scale_factor, scale_factor, scale_factor) );
+   const glm::mat4 move_back = glm::translate( glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -50.0f) );
    glm::mat4 to_world = move_back * scale_matrix * to_origin;
    if (DrawMovingObject) {
       to_world = rotate( glm::mat4(1.0f), static_cast<float>(ObjectRotationAngle), glm::vec3(0.0f, 0.0f, 1.0f) ) * to_world;
    }
 
-   ObjectShader->transferBasicTransformationUniforms( to_world, MainCamera.get() );
+   ObjectShader->transferBasicTransformationUniforms( to_world, MainCamera.get(), true );
    Object->transferUniformsToShader( ObjectShader.get() );
    Lights->transferUniformsToShader( ObjectShader.get() );
-   
+
+   glBindTextureUnit( 0, Object->getTextureID( 0 ) );
    glBindVertexArray( Object->getVAO() );
    glDrawArrays( Object->getDrawMode(), 0, Object->getVertexNum() );
 }
