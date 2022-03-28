@@ -1,7 +1,6 @@
 # OpenGL-Example
 
-![lighting](https://user-images.githubusercontent.com/17864157/61940947-6b049980-afd1-11e9-9b4d-482d78d7d0eb.PNG)
-
+![opengl-result](https://user-images.githubusercontent.com/17864157/160376705-b1b2198c-ffd0-4114-8f54-33c53860d3c3.png)
 
 
 ## Keyboard Commands
