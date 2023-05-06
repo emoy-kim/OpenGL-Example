@@ -159,9 +159,5 @@ void ShaderGL::transferBasicTransformationUniforms(const glm::mat4& to_world, co
    glUniformMatrix4fv( Location.View, 1, GL_FALSE, &view[0][0] );
    glUniformMatrix4fv( Location.Projection, 1, GL_FALSE, &projection[0][0] );
    glUniformMatrix4fv( Location.ModelViewProjection, 1, GL_FALSE, &model_view_projection[0][0] );
-
-   for (const auto& texture : Location.Texture) {
-      glUniform1i( texture.second, texture.first );
-   }
    glUniform1i( Location.UseTexture, use_texture ? 1 : 0 );
 }
