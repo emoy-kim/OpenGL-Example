@@ -186,17 +186,16 @@ void RendererGL::setLights() const
    ambient_color = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
    diffuse_color = glm::vec4(0.9f, 0.5f, 0.1f, 1.0f);
    specular_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-   glm::vec3 spotlight_direction(0.0f, -1.0f, -1.5f);
-   float spotlight_exponent = 128;
-   float spotlight_cutoff_angle_in_degree = 7.0f;
+   const glm::vec3 spotlight_direction(0.0f, -1.0f, -1.5f);
    Lights->addLight( 
       light_position, 
       ambient_color, 
       diffuse_color, 
       specular_color,
       spotlight_direction,
-      spotlight_exponent,
-      spotlight_cutoff_angle_in_degree
+      7.0f,
+      0.1f,
+      1000.0f
    );  
 }
 
