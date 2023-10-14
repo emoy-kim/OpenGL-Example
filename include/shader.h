@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "base.h"
-#include "camera.h"
 
 class ShaderGL
 {

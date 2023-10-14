@@ -10,7 +10,9 @@
 #pragma once
 
 #include "light.h"
+#include "camera.h"
 #include "object.h"
+#include "shader.h"
 
 class RendererGL
 {
