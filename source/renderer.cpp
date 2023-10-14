@@ -50,8 +50,8 @@ void RendererGL::initialize()
 
    const std::string shader_directory_path = std::string(CMAKE_SOURCE_DIR) + "/shaders";
    ObjectShader->setShader(
-      std::string(shader_directory_path + "/BasicPipeline.vert").c_str(),
-      std::string(shader_directory_path + "/BasicPipeline.frag").c_str()
+      std::string(shader_directory_path + "/scene_shader.vert").c_str(),
+      std::string(shader_directory_path + "/scene_shader.frag").c_str()
    );
 }
 
@@ -215,6 +215,10 @@ void RendererGL::setObject() const
 
 void RendererGL::drawObject(const float& scale_factor) const
 {
+   using u = ShaderGL::UNIFORM;
+   using l = ShaderGL::LIGHT_UNIFORM;
+   using m = ShaderGL::MATERIAL_UNIFORM;
+
    MainCamera->updateWindowSize( FrameWidth, FrameHeight );
    glViewport( 0, 0, FrameWidth, FrameHeight );
 
@@ -229,9 +233,32 @@ void RendererGL::drawObject(const float& scale_factor) const
       to_world = rotate( glm::mat4(1.0f), static_cast<float>(ObjectRotationAngle), glm::vec3(0.0f, 0.0f, 1.0f) ) * to_world;
    }
 
-   ObjectShader->transferBasicTransformationUniforms( to_world, MainCamera.get(), true );
-   Object->transferUniformsToShader( ObjectShader.get() );
-   Lights->transferUniformsToShader( ObjectShader.get() );
+   ObjectShader->uniformMat4fv( u::WorldMatrix, to_world );
+   ObjectShader->uniformMat4fv( u::ViewMatrix, MainCamera->getViewMatrix() );
+   ObjectShader->uniformMat4fv( u::ModelViewProjectionMatrix, MainCamera->getProjectionMatrix() * MainCamera->getViewMatrix() * to_world );
+   ObjectShader->uniform1i( u::UseTexture, 1 );
+   ObjectShader->uniform4fv( u::Material + m::EmissionColor, Object->getEmissionColor() );
+   ObjectShader->uniform4fv( u::Material + m::AmbientColor, Object->getAmbientReflectionColor() );
+   ObjectShader->uniform4fv( u::Material + m::DiffuseColor, Object->getDiffuseReflectionColor() );
+   ObjectShader->uniform4fv( u::Material + m::SpecularColor, Object->getSpecularReflectionColor() );
+   ObjectShader->uniform1f( u::Material + m::SpecularExponent, Object->getSpecularReflectionExponent() );
+   ObjectShader->uniform1i( u::UseLight, Lights->isLightOn() ? 1 : 0 );
+   if (Lights->isLightOn()) {
+      ObjectShader->uniform1i( u::LightNum, Lights->getTotalLightNum() );
+      ObjectShader->uniform4fv( u::GlobalAmbient, Lights->getGlobalAmbientColor() );
+      for (int i = 0; i < Lights->getTotalLightNum(); ++i) {
+         const int offset = u::Lights + l::UniformNum * i;
+         ObjectShader->uniform1i( offset + l::LightSwitch, Lights->isActivated( i ) ? 1 : 0 );
+         ObjectShader->uniform4fv( offset + l::LightPosition, Lights->getPosition( i ) );
+         ObjectShader->uniform4fv( offset + l::LightAmbientColor, Lights->getAmbientColors( i ) );
+         ObjectShader->uniform4fv( offset + l::LightDiffuseColor, Lights->getDiffuseColors( i ) );
+         ObjectShader->uniform4fv( offset + l::LightSpecularColor, Lights->getSpecularColors( i ) );
+         ObjectShader->uniform3fv( offset + l::SpotlightDirection, Lights->getSpotlightDirections( i ) );
+         ObjectShader->uniform1f( offset + l::SpotlightCutoffAngle, Lights->getSpotlightCutoffAngles( i ) );
+         ObjectShader->uniform1f( offset + l::SpotlightFeather, Lights->getSpotlightFeathers( i ) );
+         ObjectShader->uniform1f( offset + l::FallOffRadius, Lights->getFallOffRadii( i ) );
+      }
+   }
 
    glBindTextureUnit( 0, Object->getTextureID( 0 ) );
    glBindVertexArray( Object->getVAO() );
@@ -262,7 +289,6 @@ void RendererGL::play()
 
    setLights();
    setObject();
-   ObjectShader->setUniformLocations( Lights->getTotalLightNum() );
 
    const double update_time = 0.1;
    double last = glfwGetTime(), time_delta = 0.0;

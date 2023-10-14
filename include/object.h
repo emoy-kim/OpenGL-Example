@@ -5,7 +5,7 @@
 class ObjectGL
 {
 public:
-   enum LayoutLocation { VertexLoc = 0, NormalLoc, TextureLoc };
+   enum LayoutLocation { VertexLocation = 0, NormalLocation, TextureLocation };
 
    ObjectGL();
    ~ObjectGL();
@@ -51,7 +51,6 @@ public:
    int addTexture(const std::string& texture_file_path, bool is_grayscale = false);
    void addTexture(int width, int height, bool is_grayscale = false);
    int addTexture(const uint8_t* image_buffer, int width, int height, bool is_grayscale = false);
-   void transferUniformsToShader(const ShaderGL* shader);
    void updateDataBuffer(const std::vector<glm::vec3>& vertices, const std::vector<glm::vec3>& normals);
    void updateDataBuffer(
       const std::vector<glm::vec3>& vertices,
@@ -65,6 +64,11 @@ public:
    [[nodiscard]] GLsizei getVertexNum() const { return VerticesCount; }
    [[nodiscard]] GLuint getTextureID(int index) const { return TextureID[index]; }
    [[nodiscard]] int getTextureNum() const { return static_cast<int>(TextureID.size()); }
+   [[nodiscard]] glm::vec4 getEmissionColor() const { return EmissionColor; }
+   [[nodiscard]] glm::vec4 getAmbientReflectionColor() const { return AmbientReflectionColor; }
+   [[nodiscard]] glm::vec4 getDiffuseReflectionColor() const { return DiffuseReflectionColor; }
+   [[nodiscard]] glm::vec4 getSpecularReflectionColor() const { return SpecularReflectionColor; }
+   [[nodiscard]] float getSpecularReflectionExponent() const { return SpecularReflectionExponent; }
 
    template<typename T>
    void addShaderStorageBufferObject(const std::string& name, GLuint binding_index, int data_size)

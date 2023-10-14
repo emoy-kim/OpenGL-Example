@@ -65,8 +65,8 @@ bool ObjectGL::prepareTexture2DUsingFreeImage(const std::string& file_path, bool
       texture_converted = n_bits_per_pixel == n_bits ? texture : FreeImage_ConvertTo32Bits( texture );
    }
 
-   const GLsizei width = FreeImage_GetWidth( texture_converted );
-   const GLsizei height = FreeImage_GetHeight( texture_converted );
+   const auto width = static_cast<GLsizei>(FreeImage_GetWidth( texture_converted ));
+   const auto height = static_cast<GLsizei>(FreeImage_GetHeight( texture_converted ));
    GLvoid* data = FreeImage_GetBits( texture_converted );
    glTextureStorage2D( TextureID.back(), 1, is_grayscale ? GL_R8 : GL_RGBA8, width, height );
    glTextureSubImage2D( TextureID.back(), 0, 0, 0, width, height, is_grayscale ? GL_RED : GL_BGRA, GL_UNSIGNED_BYTE, data );
@@ -135,16 +135,16 @@ int ObjectGL::addTexture(const uint8_t* image_buffer, int width, int height, boo
 void ObjectGL::prepareTexture(bool normals_exist) const
 {
    const uint offset = normals_exist ? 6 : 3;
-   glVertexArrayAttribFormat( VAO, TextureLoc, 2, GL_FLOAT, GL_FALSE, offset * sizeof( GLfloat ) );
-   glEnableVertexArrayAttrib( VAO, TextureLoc );
-   glVertexArrayAttribBinding( VAO, TextureLoc, 0 );
+   glVertexArrayAttribFormat( VAO, TextureLocation, 2, GL_FLOAT, GL_FALSE, offset * sizeof( GLfloat ) );
+   glEnableVertexArrayAttrib( VAO, TextureLocation );
+   glVertexArrayAttribBinding( VAO, TextureLocation, 0 );
 }
 
 void ObjectGL::prepareNormal() const
 {
-   glVertexArrayAttribFormat( VAO, NormalLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof( GLfloat ) );
-   glEnableVertexArrayAttrib( VAO, NormalLoc );
-   glVertexArrayAttribBinding( VAO, NormalLoc, 0 );
+   glVertexArrayAttribFormat( VAO, NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof( GLfloat ) );
+   glEnableVertexArrayAttrib( VAO, NormalLocation );
+   glVertexArrayAttribBinding( VAO, NormalLocation, 0 );
 }
 
 void ObjectGL::prepareVertexBuffer(int n_bytes_per_vertex)
@@ -154,9 +154,9 @@ void ObjectGL::prepareVertexBuffer(int n_bytes_per_vertex)
 
    glCreateVertexArrays( 1, &VAO );
    glVertexArrayVertexBuffer( VAO, 0, VBO, 0, n_bytes_per_vertex );
-   glVertexArrayAttribFormat( VAO, VertexLoc, 3, GL_FLOAT, GL_FALSE, 0 );
-   glEnableVertexArrayAttrib( VAO, VertexLoc );
-   glVertexArrayAttribBinding( VAO, VertexLoc, 0 );
+   glVertexArrayAttribFormat( VAO, VertexLocation, 3, GL_FLOAT, GL_FALSE, 0 );
+   glEnableVertexArrayAttrib( VAO, VertexLocation );
+   glVertexArrayAttribBinding( VAO, VertexLocation, 0 );
 }
 
 void ObjectGL::getSquareObject(
@@ -200,9 +200,9 @@ void ObjectGL::setObject(GLenum draw_mode, const std::vector<glm::vec3>& vertice
    VerticesCount = 0;
    DataBuffer.clear();
    for (auto& vertex : vertices) {
-      DataBuffer.push_back( vertex.x );
-      DataBuffer.push_back( vertex.y );
-      DataBuffer.push_back( vertex.z );
+      DataBuffer.emplace_back( vertex.x );
+      DataBuffer.emplace_back( vertex.y );
+      DataBuffer.emplace_back( vertex.z );
       VerticesCount++;
    }
    const int n_bytes_per_vertex = 3 * sizeof( GLfloat );
@@ -219,12 +219,12 @@ void ObjectGL::setObject(
    VerticesCount = 0;
    DataBuffer.clear();
    for (size_t i = 0; i < vertices.size(); ++i) {
-      DataBuffer.push_back( vertices[i].x );
-      DataBuffer.push_back( vertices[i].y );
-      DataBuffer.push_back( vertices[i].z );
-      DataBuffer.push_back( normals[i].x );
-      DataBuffer.push_back( normals[i].y );
-      DataBuffer.push_back( normals[i].z );
+      DataBuffer.emplace_back( vertices[i].x );
+      DataBuffer.emplace_back( vertices[i].y );
+      DataBuffer.emplace_back( vertices[i].z );
+      DataBuffer.emplace_back( normals[i].x );
+      DataBuffer.emplace_back( normals[i].y );
+      DataBuffer.emplace_back( normals[i].z );
       VerticesCount++;
    }
    const int n_bytes_per_vertex = 6 * sizeof( GLfloat );
@@ -244,11 +244,11 @@ void ObjectGL::setObject(
    VerticesCount = 0;
    DataBuffer.clear();
    for (size_t i = 0; i < vertices.size(); ++i) {
-      DataBuffer.push_back( vertices[i].x );
-      DataBuffer.push_back( vertices[i].y );
-      DataBuffer.push_back( vertices[i].z );
-      DataBuffer.push_back( textures[i].x );
-      DataBuffer.push_back( textures[i].y );
+      DataBuffer.emplace_back( vertices[i].x );
+      DataBuffer.emplace_back( vertices[i].y );
+      DataBuffer.emplace_back( vertices[i].z );
+      DataBuffer.emplace_back( textures[i].x );
+      DataBuffer.emplace_back( textures[i].y );
       VerticesCount++;
    }
    const int n_bytes_per_vertex = 5 * sizeof( GLfloat );
@@ -268,14 +268,14 @@ void ObjectGL::setObject(
    VerticesCount = 0;
    DataBuffer.clear();
    for (size_t i = 0; i < vertices.size(); ++i) {
-      DataBuffer.push_back( vertices[i].x );
-      DataBuffer.push_back( vertices[i].y );
-      DataBuffer.push_back( vertices[i].z );
-      DataBuffer.push_back( normals[i].x );
-      DataBuffer.push_back( normals[i].y );
-      DataBuffer.push_back( normals[i].z );
-      DataBuffer.push_back( textures[i].x );
-      DataBuffer.push_back( textures[i].y );
+      DataBuffer.emplace_back( vertices[i].x );
+      DataBuffer.emplace_back( vertices[i].y );
+      DataBuffer.emplace_back( vertices[i].z );
+      DataBuffer.emplace_back( normals[i].x );
+      DataBuffer.emplace_back( normals[i].y );
+      DataBuffer.emplace_back( normals[i].z );
+      DataBuffer.emplace_back( textures[i].x );
+      DataBuffer.emplace_back( textures[i].y );
       VerticesCount++;
    }
    const int n_bytes_per_vertex = 8 * sizeof( GLfloat );
@@ -316,15 +316,6 @@ void ObjectGL::setSquareObject(
    std::vector<glm::vec2> square_textures;
    getSquareObject( square_vertices, square_normals, square_textures );
    setObject( draw_mode, square_vertices, square_normals, square_textures, texture_file_path, is_grayscale );
-}
-
-void ObjectGL::transferUniformsToShader(const ShaderGL* shader)
-{
-   glUniform4fv( shader->getMaterialEmissionLocation(), 1, &EmissionColor[0] );
-   glUniform4fv( shader->getMaterialAmbientLocation(), 1, &AmbientReflectionColor[0] );
-   glUniform4fv( shader->getMaterialDiffuseLocation(), 1, &DiffuseReflectionColor[0] );
-   glUniform4fv( shader->getMaterialSpecularLocation(), 1, &SpecularReflectionColor[0] );
-   glUniform1f( shader->getMaterialSpecularExponentLocation(), SpecularReflectionExponent );
 }
 
 void ObjectGL::updateDataBuffer(const std::vector<glm::vec3>& vertices, const std::vector<glm::vec3>& normals)
