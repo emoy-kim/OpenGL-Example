@@ -14,26 +14,25 @@ struct LightInfo
    float SpotlightFeather;
    float FallOffRadius;
 };
-uniform LightInfo Lights[MAX_LIGHTS];
+layout (location = 3) uniform LightInfo Lights[MAX_LIGHTS];
 
-struct MateralInfo {
+struct MateralInfo
+{
    vec4 EmissionColor;
    vec4 AmbientColor;
    vec4 DiffuseColor;
    vec4 SpecularColor;
    float SpecularExponent;
 };
-uniform MateralInfo Material;
+layout (location = 291) uniform MateralInfo Material;
 
 layout (binding = 0) uniform sampler2D BaseTexture;
-uniform int UseTexture;
 
-uniform int UseLight;
-uniform int LightNum;
-uniform vec4 GlobalAmbient;
-
-uniform mat4 ViewMatrix;
-uniform mat4 ProjectionMatrix;
+layout (location = 1) uniform mat4 ViewMatrix;
+layout (location = 296) uniform int UseTexture;
+layout (location = 297) uniform int UseLight;
+layout (location = 298) uniform int LightNum;
+layout (location = 299) uniform vec4 GlobalAmbient;
 
 in vec3 position_in_ec;
 in vec3 normal_in_ec;
